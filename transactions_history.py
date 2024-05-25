@@ -1,6 +1,5 @@
 import sqlite3
 
-
 class TransactionHistory:
     def __init__(self, db_name='transactions.db'):
         self.conn = sqlite3.connect(db_name)
@@ -14,21 +13,22 @@ class TransactionHistory:
                     user_id TEXT,
                     amount REAL,
                     latitude REAL,
-                    longitude REAL
+                    longitude REAL,
+                    anomaly INTEGER
                 )
             """)
     
-    def add_transaction(self, user_id, amount, latitude, longitude):
+    def add_transaction(self, user_id, amount, latitude, longitude, anomaly):
         with self.conn:
             self.conn.execute("""
-                INSERT INTO transactions (user_id, amount, latitude, longitude)
-                VALUES (?, ?, ?, ?)
-            """, (user_id, amount, latitude, longitude))
+                INSERT INTO transactions (user_id, amount, latitude, longitude, anomaly)
+                VALUES (?, ?, ?, ?, ?)
+            """, (user_id, amount, latitude, longitude, anomaly))
     
-    def get_recent_transactions(self, limit=10):
+    def get_recent_transactions(self, limit=100):
         with self.conn:
             cursor = self.conn.execute("""
-                SELECT user_id, amount, latitude, longitude
+                SELECT user_id, amount, latitude, longitude, anomaly
                 FROM transactions
                 ORDER BY id DESC
                 LIMIT ?

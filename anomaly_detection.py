@@ -1,27 +1,24 @@
 import numpy as np
-from geopy.distance import geodesic
+import joblib
 
 
-def is_anomalous_transaction(user_id, amount, latitude, longitude, history, threshold=2):
-    transactions = history.get_recent_transactions()
+def is_anomalous_transaction(user_id, amount, latitude, longitude, model):
+    # Nowa transakcja
+    new_transaction = np.array([[amount, latitude, longitude]])
     
-    if len(transactions) < 10:
-        return False  # Początkowo zbieramy dane
+    # Wykrywanie anomalii
+    is_anomaly = model.predict(new_transaction)[0] == 1
     
-    amounts = [t[1] for t in transactions]
-    latitudes = [t[2] for t in transactions]
-    longitudes = [t[3] for t in transactions]
-    
-    mean_amount = np.mean(amounts)
-    std_amount = np.std(amounts)
-    
-    if abs(amount - mean_amount) > threshold * std_amount:
-        return True  # Anomalia w wartości transakcji
-    
-    mean_location = (np.mean(latitudes), np.mean(longitudes))
-    distance = geodesic(mean_location, (latitude, longitude)).km
-    
-    if distance > threshold * np.std([geodesic((lat, lon), mean_location).km for lat, lon in zip(latitudes, longitudes)]):
-        return True  # Anomalia w lokalizacji
-    
-    return False
+    return is_anomaly
+
+
+model = joblib.load('20240525_132030_my_model.pkl')
+
+
+new_transaction = ("user1", 1.0, 52.2296756, 21.0122287)   # to będzie pobrane z kafki zamiast wygenerowane tutaj
+if is_anomalous_transaction(*new_transaction, model):
+    print("Anomalous transaction detected!")
+else:
+    print("Transaction is normal.")
+
+
