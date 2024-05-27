@@ -1,4 +1,3 @@
-import numpy as np
 import joblib
 
 from anomaly_detection import is_anomalous_transaction
