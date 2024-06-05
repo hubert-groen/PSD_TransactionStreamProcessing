@@ -35,24 +35,26 @@ source = KafkaSource.builder() \
     .set_value_only_deserializer(SimpleStringSchema()) \
     .build()
 
-# record_serializer = KafkaRecordSerializationSchema.builder() \
-#     .set_topic('SOMETHING_ELSE') \
-#     .set_value_serialization_schema(SimpleStringSchema()) \
-#     .build()
+record_serializer = KafkaRecordSerializationSchema.builder() \
+    .set_topic('SOMETHING_ELSE') \
+    .set_value_serialization_schema(SimpleStringSchema()) \
+    .build()
 
-# sink = KafkaSink.builder() \
-#     .set_bootstrap_servers('localhost:9092') \
-#     .set_record_serializer(record_serializer) \
-#     .build()
+sink = KafkaSink.builder() \
+    .set_bootstrap_servers('localhost:9092') \
+    .set_record_serializer(record_serializer) \
+    .build()
 
 ds = env.from_source(source, WatermarkStrategy.no_watermarks(), "Kafka Source")
 ds.print()
 
-# ds.add_sink(sink)
+ds.map(lambda x: "\n " + str(x), output_type=Types.STRING()).print()
+
+ds.sink_to(sink)
 
 # Print line for readablity in the console
 print("start reading data from kafka")
 
-ds.map(lambda x: "\n " + str(x), output_type=Types.STRING()).print()
+
 
 env.execute("Kafka Source Example")
