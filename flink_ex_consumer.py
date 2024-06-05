@@ -49,6 +49,7 @@ ds = env.from_source(source, WatermarkStrategy.no_watermarks(), "Kafka Source")
 ds.print()
 
 ds.map(lambda x: "\n " + str(x), output_type=Types.STRING()).print()
+ds = ds.map(lambda x: "\n " + str(x[:5]), output_type=Types.STRING())
 
 ds.sink_to(sink)
 
