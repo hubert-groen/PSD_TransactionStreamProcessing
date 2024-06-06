@@ -2,7 +2,7 @@ import pandas as pd
 import joblib
 import datetime
 
-from training.transactions_history import TransactionHistory
+from transactions_history import TransactionHistory
 from sklearn.ensemble import RandomForestClassifier
 
 

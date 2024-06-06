@@ -22,7 +22,7 @@ if __name__ == '__main__':
         transaction = generate_transaction()
         # Send it to our 'TOPIC-A' topic
         print(f'Producing message @ {datetime.now()} | Message = {str(transaction)}')
-        producer_1.send('TOPIC-Q1', transaction)
+        producer_1.send('TOPIC-Q3', transaction)
         # Sleep for a random number of seconds
         time_to_sleep = random.randint(1, 11)
         time.sleep(time_to_sleep)

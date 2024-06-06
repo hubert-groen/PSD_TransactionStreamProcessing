@@ -9,7 +9,7 @@ import joblib
 import os
 import numpy as np
 
-MODEL = joblib.load(os.path.abspath(os.path.dirname(__file__))+'/models/20240525_132030_my_model.pkl')
+MODEL = joblib.load(os.path.abspath(os.path.dirname(__file__))+'/models/20240606_122558_my_model.pkl')
 
 def is_anomalous_transaction(user_id, amount, latitude, longitude, model):
     # Nowa transakcja
@@ -60,14 +60,14 @@ if __name__ == '__main__':
 
     source = KafkaSource.builder() \
         .set_bootstrap_servers('localhost:9092') \
-        .set_topics('TOPIC-Q1') \
+        .set_topics('TOPIC-Q3') \
         .set_group_id("test_group") \
         .set_starting_offsets(offset) \
         .set_value_only_deserializer(SimpleStringSchema()) \
         .build()
 
     record_serializer = KafkaRecordSerializationSchema.builder() \
-        .set_topic('TOPIC-Q2') \
+        .set_topic('TOPIC-Q4') \
         .set_value_serialization_schema(SimpleStringSchema()) \
         .build()
 

@@ -4,7 +4,7 @@ from kafka import KafkaConsumer
 if __name__ == '__main__':
 # Kafka Consumer
     consumer = KafkaConsumer(
-        'TOPIC-Q2',
+        'TOPIC-Q4',
         bootstrap_servers='localhost:9092',
         auto_offset_reset='earliest'
         )
