@@ -1,4 +1,4 @@
-from transactions_history import TransactionHistory
+from training.transactions_history import TransactionHistory
 
 history = TransactionHistory()
 
