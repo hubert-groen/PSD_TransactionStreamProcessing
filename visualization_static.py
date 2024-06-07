@@ -1,4 +1,6 @@
-from transations_data_generator import generate_transaction
+# from transations_data_generator import generate_transaction
+from transations_data_generator_2 import generate_transaction
+
 import joblib
 import os
 import numpy as np
@@ -24,7 +26,7 @@ def is_anomalous_transaction(user_id, amount, latitude, longitude, model=MODEL):
 tab = []
 pred = []
 
-for _ in range(20):
+for _ in range(40):
     transaction = generate_transaction()
     result = is_anomalous_transaction(transaction["user_id"], transaction["amount"], transaction["latitude"], transaction["longitude"])
 
