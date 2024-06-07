@@ -15,7 +15,7 @@ data = [
 
 import numpy as np
 
-def is_anomaly(user_id, new_transaction, data, n=10, threshold=3):
+def is_anomaly_std(user_id, new_transaction, data, n=10, threshold=3):
 
     user_data = [d['amount'] for d in data if d['user_id'] == user_id]
     
