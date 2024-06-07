@@ -27,7 +27,7 @@ def generate_random_transactions(num_transactions, user):
         elif rand > 0.3 and rand < 0.4:
             latitude = round(random.uniform(-90, 90), 6)
             longitude = round(random.uniform(-180, 180), 6)
-            while 50 <= latitude <= 54 and 19 <= longitude <= 23:
+            while 50 <= latitude <= 54 or 19 <= longitude <= 23:
                 latitude = round(random.uniform(-90, 90), 6)
                 longitude = round(random.uniform(-180, 180), 6)
             anomaly = 1
@@ -36,7 +36,7 @@ def generate_random_transactions(num_transactions, user):
     
     return transactions
 
-transactions = generate_random_transactions(1000, "user1")
+transactions = generate_random_transactions(2000, "user1")
 
 for transaction in transactions:
     add_transaction(transaction[0], transaction[1], transaction[2], transaction[3], transaction[4])
