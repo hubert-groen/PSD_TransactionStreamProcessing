@@ -8,7 +8,7 @@ def generate_transaction() -> dict:
     longitude = round(random.uniform(19, 23), 6)
     
     rand = random.random()
-    if rand <= 0.2:  # 10% chance to get a value between 1 and 9
+    if rand <= 0.2:
         amount = random.randint(0, 9)
 
     elif rand > 0.2 and rand <= 0.4:
