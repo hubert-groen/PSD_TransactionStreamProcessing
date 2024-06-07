@@ -36,28 +36,30 @@ def generate_random_transactions(num_transactions, user, anomaly_distance_thresh
     base_location = (52.2296756, 21.0122287)  # Baza lokalizacji (np. Warszawa)
     
     for _ in range(num_transactions):
-        amount = round(random.uniform(1, 500), 2)  # Losowa kwota transakcji między 1 a 500
-        lat = round(random.uniform(49, 55), 6)    # Losowa szerokość geograficzna w Polsce
-        lon = round(random.uniform(14, 24), 6)    # Losowa długość geograficzna w Polsce
+        amount = round(random.uniform(50, 500), 2)  # Losowa kwota transakcji między 1 a 500
+        lat = round(random.uniform(50, 54), 6)    # Losowa szerokość geograficzna w Polsce
+        lon = round(random.uniform(19, 23), 6)    # Losowa długość geograficzna w Polsce
         
         transaction_location = (lat, lon)
         distance = geodesic(base_location, transaction_location).km
 
-        if random.random() <= 0.3:
+        anomaly = 0
+
+        rand = random.random()
+        if rand <= 0.3:
             amount = random.randint(1, 9)
-        
-        #if amount < 10 or distance > anomaly_distance_threshold:
-        if amount < 10:
             anomaly = 1
-        else:
-            anomaly = 0
+        elif rand > 0.3 and rand < 0.4:
+            lat = round(random.uniform(20, 24), 6)
+            lon = round(random.uniform(11, 13), 6)
+            anomaly = 1
         
         transactions.append((user, amount, lat, lon, anomaly))
     
     return transactions
 
 # Generowanie 20 losowych transakcji
-transactions = generate_random_transactions(800, "user1")
+transactions = generate_random_transactions(1000, "user1")
 
 # Wyświetlenie transakcji
 for transaction in transactions:

@@ -2,16 +2,18 @@ import random
 
 def generate_transaction() -> dict:
     user_id = "user1"
-    
 
-    if random.random() < 0.2:  # 10% chance to get a value between 1 and 9
+    amount = round(random.uniform(50, 500), 2)
+    latitude = round(random.uniform(50, 54), 6)
+    longitude = round(random.uniform(19, 23), 6)
+    
+    rand = random.random()
+    if rand <= 0.2:  # 10% chance to get a value between 1 and 9
         amount = random.randint(0, 9)
-        latitude = round(random.uniform(1, 2), 6)
-        longitude = round(random.uniform(2, 3), 6)
-    else:
-        amount = random.randint(20, 500)
-        latitude = round(random.uniform(50, 53), 6)
-        longitude = round(random.uniform(17, 22), 6)
+
+    elif rand > 0.2 and rand <= 0.4:
+        latitude = round(random.uniform(20, 24), 6)
+        longitude = round(random.uniform(11, 13), 6)
         
     return {
         'user_id': user_id,
@@ -19,3 +21,6 @@ def generate_transaction() -> dict:
         'latitude': latitude,
         'longitude': longitude
     }
+
+        
+
