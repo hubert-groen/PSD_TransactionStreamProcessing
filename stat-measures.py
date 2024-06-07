@@ -36,7 +36,7 @@ def is_anomaly_std(user_id, new_transaction, data, n=10, threshold=3):
         return abs(z_score) > threshold
 
 new_transaction = {'user_id': 7, 'amount': 500, 'latitude': 42.672592, 'longitude': -77.870346}
-print(is_anomaly(7, new_transaction, data))
+print(is_anomaly_std(7, new_transaction, data))
 
 
 
