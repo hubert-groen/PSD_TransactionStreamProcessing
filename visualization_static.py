@@ -1,4 +1,4 @@
-from src.generator.transations_data_generator import generate_transaction
+from transations_data_generator_2 import generate_transaction
 import joblib
 import os
 import numpy as np
