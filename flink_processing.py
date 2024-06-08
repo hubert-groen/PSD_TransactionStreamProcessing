@@ -15,6 +15,11 @@ import os
 import numpy as np
 
 
+properties = {
+    'bootstrap.servers': 'localhost:9092',
+    'group.id': '1',
+} 
+
 class CountWindowAverage(FlatMapFunction):
 
     def __init__(self):
@@ -31,23 +36,29 @@ class CountWindowAverage(FlatMapFunction):
         # access the state value
         current_avg = self.sum.value()
         if current_avg is None:
-            current_avg = (0, 0)
+            current_avg = (0, 0, 0, 0)
 
         # update the count
-        current_avg = (current_avg[0] + 1, current_avg[1] + value['amount'])
+        current_avg = (current_avg[0] + 1, 
+                       current_avg[1] + value['amount'],
+                       current_avg[1] + value['latitude'],
+                       current_avg[1] + value['longitude'])
+        
+        current_avg = (current_avg[0], current_avg[1]/current_avg[0], 
+                       current_avg[2]/current_avg[0], current_avg[3]/current_avg[0])
 
         # update the state
         self.sum.update(current_avg)
-        value['average'] = current_avg[1]/current_avg[0]
+        value['average-amount'] = current_avg[1]
+        value['average-latitude'] = current_avg[2]
+        value['average-longitude'] = current_avg[3]
+        
+
         yield value
 
 
 if __name__ == '__main__':
     env = StreamExecutionEnvironment.get_execution_environment()
-    properties = {
-    'bootstrap.servers': 'localhost:9092',
-    'group.id': '1',
-    } 
 
     env.set_parallelism(1)
 
@@ -84,7 +95,7 @@ if __name__ == '__main__':
     ds = ds.map(lambda x: json.loads(x))
         
     ds = ds.key_by(lambda x:  x['user_id']) \
-        .flat_map(CountWindowAverage()) \
+        .flat_map(CountWindowAverage())
 
     ds.map(lambda x: "\n " + str(x), output_type=Types.STRING()).print()
 
