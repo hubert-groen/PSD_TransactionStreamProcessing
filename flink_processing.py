@@ -34,24 +34,21 @@ class CountWindowAverage(FlatMapFunction):
 
     def flat_map(self, value):
         # access the state value
-        current_avg = self.sum.value()
-        if current_avg is None:
-            current_avg = (0, 0, 0, 0)
+        current_sum = self.sum.value()
+        if current_sum is None:
+            current_sum = (0, 0, 0, 0)
 
         # update the count
-        current_avg = (current_avg[0] + 1, 
-                       current_avg[1] + value['amount'],
-                       current_avg[1] + value['latitude'],
-                       current_avg[1] + value['longitude'])
-        
-        current_avg = (current_avg[0], current_avg[1]/current_avg[0], 
-                       current_avg[2]/current_avg[0], current_avg[3]/current_avg[0])
+        current_sum = (current_sum[0] + 1, 
+                       current_sum[1] + value['amount'],
+                       current_sum[1] + value['latitude'],
+                       current_sum[1] + value['longitude'])
 
         # update the state
-        self.sum.update(current_avg)
-        value['average-amount'] = current_avg[1]
-        value['average-latitude'] = current_avg[2]
-        value['average-longitude'] = current_avg[3]
+        self.sum.update(current_sum)
+        value['average-amount'] = current_sum[1]/current_sum[0]
+        value['average-latitude'] = current_sum[2]/current_sum[0]
+        value['average-longitude'] = current_sum[3]/current_sum[0]
         
 
         yield value
