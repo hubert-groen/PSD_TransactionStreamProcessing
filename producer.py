@@ -2,7 +2,7 @@ import time
 import json
 import random
 from datetime import datetime
-from transations_data_generator import generate_transaction
+from src.generator.transations_data_generator import generate_transaction
 from kafka import KafkaProducer
 
 # Messages will be serialized as JSON
@@ -21,7 +21,7 @@ if __name__ == '__main__':
         # Generate a message
         transaction = generate_transaction()
         # Send it to our 'TOPIC-A' topic
-        print(f'Producing message @ {datetime.now()} | Message = {str(transaction)}')
+        print(f'Producing message {datetime.now()} | Message = {str(transaction)}')
         producer_1.send('TOPIC-Q3', transaction)
         # Sleep for a random number of seconds
         time_to_sleep = random.randint(1, 11)

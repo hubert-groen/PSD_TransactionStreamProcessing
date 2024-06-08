@@ -1,7 +1,7 @@
 import random
 
 def generate_transaction() -> dict:
-    user_id = "user1"
+    user_id = "user" + str(random.randint(1, 10))
 
     amount = round(random.uniform(50, 500), 2)
     latitude = round(random.uniform(50, 54), 6)

@@ -2,6 +2,11 @@ from pyflink.common import WatermarkStrategy, Types
 from pyflink.common.serialization import SimpleStringSchema
 from pyflink.datastream.formats.json import JsonRowDeserializationSchema
 from pyflink.datastream import StreamExecutionEnvironment
+
+#state
+from pyflink.datastream.state import ValueStateDescriptor
+from pyflink.datastream import StreamExecutionEnvironment, FlatMapFunction, RuntimeContext
+
 from pyflink.datastream.connectors.kafka import KafkaOffsetsInitializer, KafkaTopicPartition, KafkaSink,  KafkaRecordSerializationSchema
 from pyflink.datastream.connectors import KafkaSource
 import json
@@ -9,47 +14,45 @@ import joblib
 import os
 import numpy as np
 
-MODEL = joblib.load(os.path.abspath(os.path.dirname(__file__))+'/models/20240606_122558_my_model.pkl')
 
-def is_anomalous_transaction(user_id, amount, latitude, longitude, model):
-    # Nowa transakcja
-    new_transaction = np.array([[amount, latitude, longitude]])
-    
-    # Wykrywanie anomalii
-    is_anomaly = model.predict(new_transaction)[0] == 1
-    
-    #return is_anomaly
-    if is_anomaly:
-        return 1
-    return 0
+class CountWindowAverage(FlatMapFunction):
 
+    def __init__(self):
+        self.sum = None
 
-def verify_transaction(transaction_string: str):
-    transaction_json = json.loads(transaction_string)
-    user_id = transaction_json['user_id']
-    amount = transaction_json['amount']
-    latitude = transaction_json['latitude']
-    longitude = transaction_json['longitude']
-    
-    return is_anomalous_transaction(user_id, amount, latitude, longitude, MODEL)
-    #return 0    
+    def open(self, runtime_context: RuntimeContext):
+        descriptor = ValueStateDescriptor(
+            "average",  # the state name
+            Types.PICKLED_BYTE_ARRAY()  # type information
+        )
+        self.sum = runtime_context.get_state(descriptor)
+
+    def flat_map(self, value):
+        # access the state value
+        current_avg = self.sum.value()
+        if current_avg is None:
+            current_avg = (0, 0)
+
+        # update the count
+        current_avg = (current_avg[0] + 1, current_avg[1] + value['amount'])
+
+        # update the state
+        self.sum.update(current_avg)
+        value['average'] = current_avg[1]/current_avg[0]
+        yield value
 
 
 if __name__ == '__main__':
-    # Create a StreamExecutionEnvironment
     env = StreamExecutionEnvironment.get_execution_environment()
-
-
     properties = {
     'bootstrap.servers': 'localhost:9092',
     'group.id': '1',
-    }
+    } 
 
     env.set_parallelism(1)
 
 
     deserialization_schema = SimpleStringSchema()
-    # deserialization_schema = DeserializationSchema()
 
     deserialization_schema = JsonRowDeserializationSchema.builder() \
         .type_info(type_info=Types.ROW([Types.STRING(), Types.INT(), Types.FLOAT(), Types.FLOAT()])).build()
@@ -78,18 +81,18 @@ if __name__ == '__main__':
 
     ds = env.from_source(source, WatermarkStrategy.no_watermarks(), "Kafka Source")
     ds.print()
+    ds = ds.map(lambda x: json.loads(x))
+        
+    ds = ds.key_by(lambda x:  x['user_id']) \
+        .flat_map(CountWindowAverage()) \
 
-    ds.map(lambda x: "\n " + 'Transaction ' + x +' is anomalous: ' + str(verify_transaction(x)), output_type=Types.STRING()).print()
-    #ds = ds.map(lambda x: "\n " + 'Transaction ' + x +' is anomalous: ' + str(verify_transaction(x)), output_type=Types.STRING())
+    ds.map(lambda x: "\n " + str(x), output_type=Types.STRING()).print()
 
-    ds = ds.map(lambda x: "\n " + str(x[:-1]) + ', "anomaly": ' + str(verify_transaction(x)) + '}', output_type=Types.STRING())
+    ds = ds.map(lambda x: str(x), output_type=Types.STRING())
 
 
     ds.sink_to(sink)
 
-    # Print line for readablity in the console
     print("start reading data from kafka")
-
-
 
     env.execute("Detect anomalous transaction")
