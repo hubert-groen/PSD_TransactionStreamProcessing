@@ -17,6 +17,11 @@ producer_1 = KafkaProducer(
 
 if __name__ == '__main__':
     # Infinite loop - runs until you kill the program
+
+    for i in range(20):
+        transaction = generate_transaction(intro_mode=True)
+        i += 1
+
     while True:
         # Generate a message
         transaction = generate_transaction()

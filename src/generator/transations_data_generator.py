@@ -1,6 +1,6 @@
 import random
 
-def generate_transaction() -> dict:
+def generate_transaction(intro_mode=False) -> dict:
     user_id = random.randint(1, 10)
     card_id = random.randint(1,3)
     locations = {
@@ -23,12 +23,13 @@ def generate_transaction() -> dict:
     longitude = round(random.uniform(lon_min, lon_max), 6)
     trans_limit = random.randint(1000, 10000)
     
-    rand = random.random()
-    if rand <= 0.2:
-        amount = random.randint(0, 5000)
-    elif rand > 0.2 and rand <= 0.4:
-        latitude = round(random.uniform(-90, 90), 6)
-        longitude = round(random.uniform(-180, 180), 6)
+    if not intro_mode:
+        rand = random.random()
+        if rand <= 0.2:
+            amount = random.randint(0, 5000)
+        elif rand > 0.2 and rand <= 0.4:
+            latitude = round(random.uniform(-90, 90), 6)
+            longitude = round(random.uniform(-180, 180), 6)
         
     return {
         'user_id': user_id,
@@ -38,6 +39,3 @@ def generate_transaction() -> dict:
         'longitude': longitude,
         'trans_limit': trans_limit
     }
-
-for _ in range(10):
-    print(generate_transaction())
