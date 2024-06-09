@@ -11,6 +11,7 @@ from pyflink.datastream.connectors.kafka import KafkaOffsetsInitializer, KafkaTo
 from pyflink.datastream.connectors import KafkaSource
 import json
 import datetime
+import math
 
 ACCEPTED_TRANSACTION_FREQUENCY = 10
 TRANSACTION_QUEUE_SIZE = 10
@@ -47,7 +48,7 @@ class ProcessTransaction(FlatMapFunction):
             return 'Trans_limit'
         elif(self.is_amount_anomalous(curr_trans, state)):
             return 'Amount'
-        elif(False):
+        elif self.is_geolocation_anomalous(curr_trans, state):
             return 'Geolocation'
         elif(self.is_frequency_anomalous(curr_trans, state[2])):
             return 'Frequency'
@@ -60,6 +61,40 @@ class ProcessTransaction(FlatMapFunction):
         avg_trans = state[TRANS_SUM_IDX]/len(state[PREV_TRANS_IDX])
         # some dummy method - to be improved
         return (curr_trans['amount']-avg_trans)>4*avg_trans
+
+
+    def haversine_distance(lat1, lon1, lat2, lon2):
+        '''
+        - some common function to calculate distrance taking into acount flatness of the earth XD
+        '''
+        R = 6371.0
+
+        lat1_rad = math.radians(lat1)
+        lon1_rad = math.radians(lon1)
+        lat2_rad = math.radians(lat2)
+        lon2_rad = math.radians(lon2)
+
+        dlat = lat2_rad - lat1_rad
+        dlon = lon2_rad - lon1_rad
+
+        a = math.sin(dlat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        distance = R * c
+
+        return distance
+
+    def is_geolocation_anomalous(self, curr_trans, state):
+        prev_transactions = state[PREV_TRANS_IDX]
+        if len(prev_transactions) < 4:  # 4 is some arbitrary number of min transactions
+            return False
+
+        avg_latitude = sum(trans['latitude'] for trans in prev_transactions) / len(prev_transactions)
+        avg_longitude = sum(trans['longitude'] for trans in prev_transactions) / len(prev_transactions)
+
+        distance = self.haversine_distance(avg_latitude, avg_longitude,
+                                    curr_trans['latitude'], curr_trans['longitude'])
+
+        return distance > 200
 
     def is_frequency_anomalous(self, curr_trans, prev_trans_buffer):
         sum = 0
