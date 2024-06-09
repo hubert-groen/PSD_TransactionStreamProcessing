@@ -18,7 +18,8 @@ TRANSACTION_QUEUE_SIZE = 10
 
 COUNTER_IDX = 0
 TRANS_SUM_IDX = 1
-PREV_TRANS_IDX =2
+PREV_TRANS_IDX = 2
+
 
 class ProcessTransaction(FlatMapFunction):
     
@@ -48,12 +49,12 @@ class ProcessTransaction(FlatMapFunction):
             return 'Trans_limit'
         elif(self.is_amount_anomalous(curr_trans, state)):
             return 'Amount'
-        elif self.is_geolocation_anomalous(curr_trans, state):
+        elif(self.is_geolocation_anomalous(curr_trans, state)):
             return 'Geolocation'
-        elif(self.is_frequency_anomalous(curr_trans, state[2])):
+        elif(self.is_frequency_anomalous(curr_trans, state[PREV_TRANS_IDX])):
             return 'Frequency'
         else:
-            'None'
+            return 'None'
     
     def is_amount_anomalous(self, curr_trans, state):
         if len(state[PREV_TRANS_IDX]) < 4:       # 4 is some arbitrary number of min transactions
@@ -63,7 +64,7 @@ class ProcessTransaction(FlatMapFunction):
         return (curr_trans['amount']-avg_trans)>4*avg_trans
 
 
-    def haversine_distance(lat1, lon1, lat2, lon2):
+    def haversine_distance(self, lat1, lon1, lat2, lon2):
         '''
         - some common function to calculate distrance taking into acount flatness of the earth XD
         '''
@@ -118,7 +119,9 @@ class ProcessTransaction(FlatMapFunction):
                 )
             
         alert = self.detect_anomaly(value, current_state)
-        
+        if alert != 'None':
+            return alert
+        # do not update state with anomalous transaction
         new_trans_sum = current_state[1]
         # update sum of buff transactions
         if(len(current_state[PREV_TRANS_IDX])==TRANSACTION_QUEUE_SIZE):
@@ -134,12 +137,12 @@ class ProcessTransaction(FlatMapFunction):
             current_state[PREV_TRANS_IDX]
         )
         self.state.update(current_state)
+        value['average-amount'] = current_state[TRANS_SUM_IDX]/len(current_state[PREV_TRANS_IDX])
         return alert
 
     def flat_map(self, value):
         alert = self.process_transaction(value)
         current_state = self.state.value()
-        value['average-amount'] = current_state[1]/len(current_state[2])
         value['alert'] = alert
 
         yield value
@@ -160,14 +163,14 @@ if __name__ == '__main__':
 
     source = KafkaSource.builder() \
         .set_bootstrap_servers('localhost:9092') \
-        .set_topics('TOPIC-T3') \
+        .set_topics('TOPIC-A3') \
         .set_group_id("test_group") \
         .set_starting_offsets(offset) \
         .set_value_only_deserializer(SimpleStringSchema()) \
         .build()
 
     record_serializer = KafkaRecordSerializationSchema.builder() \
-        .set_topic('TOPIC-T4') \
+        .set_topic('TOPIC-A4') \
         .set_value_serialization_schema(SimpleStringSchema()) \
         .build()
 
