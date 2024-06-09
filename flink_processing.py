@@ -45,14 +45,14 @@ class ProcessTransaction(FlatMapFunction):
             buffer.pop(0)
         
     def detect_anomaly(self, curr_trans, state) -> str:
-        if(curr_trans['amount']>curr_trans['trans_limit']):
-            return 'Trans_limit'
-        elif(self.is_amount_anomalous(curr_trans, state)):
+        if(self.is_amount_anomalous(curr_trans, state)):
             return 'Amount'
         elif(self.is_geolocation_anomalous(curr_trans, state)):
             return 'Geolocation'
         elif(self.is_frequency_anomalous(curr_trans, state[PREV_TRANS_IDX])):
             return 'Frequency'
+        elif(curr_trans['amount']>curr_trans['trans_limit']):
+            return 'Trans_limit'
         else:
             return 'None'
     
@@ -163,14 +163,14 @@ if __name__ == '__main__':
 
     source = KafkaSource.builder() \
         .set_bootstrap_servers('localhost:9092') \
-        .set_topics('TOPIC-NEW1') \
+        .set_topics('TOPIC-NA1') \
         .set_group_id("test_group") \
         .set_starting_offsets(offset) \
         .set_value_only_deserializer(SimpleStringSchema()) \
         .build()
 
     record_serializer = KafkaRecordSerializationSchema.builder() \
-        .set_topic('TOPIC-NEW2') \
+        .set_topic('TOPIC-NA2') \
         .set_value_serialization_schema(SimpleStringSchema()) \
         .build()
 
