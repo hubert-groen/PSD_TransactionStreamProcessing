@@ -21,7 +21,7 @@ if __name__ == '__main__':
     for i in range(20):
         transaction = generate_transaction(intro_mode=True)
         print(f'Producing INTRO message {datetime.now()} | Message = {str(transaction)}')
-        producer_1.send('TOPIC-T3', transaction)
+        producer_1.send('TOPIC-NEW1', transaction)
         time_to_sleep = random.randint(1, 1)
         time.sleep(time_to_sleep)
         i += 1
@@ -31,7 +31,7 @@ if __name__ == '__main__':
         transaction = generate_transaction()
         # Send it to our 'TOPIC-A' topic
         print(f'Producing message {datetime.now()} | Message = {str(transaction)}')
-        producer_1.send('TOPIC-T3', transaction)
+        producer_1.send('TOPIC-NEW1', transaction)
         # Sleep for a random number of seconds
         time_to_sleep = random.randint(1, 11)
         time.sleep(time_to_sleep)

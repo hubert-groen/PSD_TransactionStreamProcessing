@@ -95,7 +95,7 @@ class ProcessTransaction(FlatMapFunction):
         distance = self.haversine_distance(avg_latitude, avg_longitude,
                                     curr_trans['latitude'], curr_trans['longitude'])
 
-        return distance > 200
+        return distance > 100
 
     def is_frequency_anomalous(self, curr_trans, prev_trans_buffer):
         sum = 0
@@ -163,14 +163,14 @@ if __name__ == '__main__':
 
     source = KafkaSource.builder() \
         .set_bootstrap_servers('localhost:9092') \
-        .set_topics('TOPIC-A3') \
+        .set_topics('TOPIC-NEW1') \
         .set_group_id("test_group") \
         .set_starting_offsets(offset) \
         .set_value_only_deserializer(SimpleStringSchema()) \
         .build()
 
     record_serializer = KafkaRecordSerializationSchema.builder() \
-        .set_topic('TOPIC-A4') \
+        .set_topic('TOPIC-NEW2') \
         .set_value_serialization_schema(SimpleStringSchema()) \
         .build()
 

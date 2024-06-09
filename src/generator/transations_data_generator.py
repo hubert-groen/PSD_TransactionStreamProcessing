@@ -21,7 +21,7 @@ def generate_transaction(intro_mode=False) -> dict:
     amount = round(random.uniform(50, 12000), 2)
     latitude = round(random.uniform(lat_min, lat_max), 6)
     longitude = round(random.uniform(lon_min, lon_max), 6)
-    trans_limit = random.randint(1000, 10000)
+    trans_limit = random.randint(5000, 10000)
     
     if not intro_mode:
         rand = random.random()
