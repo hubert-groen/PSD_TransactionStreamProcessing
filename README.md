@@ -1,4 +1,7 @@
+Run with: 
+`<flink_path>/bin/flink run -py <repo_path>/flink_processing.py -pyclientexec /usr/bin/python3 -pyexec /usr/bin/python3`
 
+------
 
 1. KAFKA PRODUCENT 1 + GENERATOR DANYCH TRANSAKCJI
 

@@ -10,48 +10,104 @@ from pyflink.datastream import StreamExecutionEnvironment, FlatMapFunction, Runt
 from pyflink.datastream.connectors.kafka import KafkaOffsetsInitializer, KafkaTopicPartition, KafkaSink,  KafkaRecordSerializationSchema
 from pyflink.datastream.connectors import KafkaSource
 import json
-import joblib
-import os
-import numpy as np
+import datetime
 
+ACCEPTED_TRANSACTION_FREQUENCY = 10
+TRANSACTION_QUEUE_SIZE = 10
+
+class ProcessTransaction(FlatMapFunction):
+    
+    def __init__(self):
+        self.state = None
+
+    def open(self, runtime_context: RuntimeContext):
+        descriptor = ValueStateDescriptor(
+            "transaction_state",  # the state name
+            Types.PICKLED_BYTE_ARRAY()  # type information
+        )
+        self.state = runtime_context.get_state(descriptor)
+
+    def update_transaction_buffer(self, new_value, buffer):
+        transaction = {
+            'amount':new_value['amount'],
+            'datetime':datetime.datetime.now(),
+            'latitude':new_value['latitude'],
+            'longitude':new_value['longitude']
+        }
+        buffer.append(transaction)
+        if (len(buffer)>TRANSACTION_QUEUE_SIZE):
+            buffer.pop(0)
+        
+    def detect_anomaly(self, curr_trans, state) -> str:
+        if(curr_trans['amount']>curr_trans['trans_limit']):
+            return 'Trans_limit'
+        elif(self.is_amount_anomalous(curr_trans, state)):
+            return 'Amount'
+        elif(False):
+            return 'Geolocation'
+        elif(self.is_frequency_anomalous(curr_trans, state[2])):
+            return 'Frequency'
+        else:
+            'None'
+    
+    def is_amount_anomalous(self, curr_trans, state):
+        if len(state[2]) < 4:       # 4 is some arbitrary number of min transactions
+            return False
+        avg_trans = state[1]/len(state[2])
+        return (curr_trans['amount']-avg_trans)>4*avg_trans
+
+    def is_frequency_anomalous(self, curr_trans, prev_trans_buffer):
+        sum = 0
+        if(len(prev_trans_buffer)<3):
+            curr_trans['trans_freq'] = 0
+            return False
+        diff1 = datetime.datetime.now() - prev_trans_buffer[-1]['datetime']
+        diff2 = prev_trans_buffer[-1]['datetime'] - prev_trans_buffer[-2]['datetime'] 
+        diff3 = prev_trans_buffer[-2]['datetime'] - prev_trans_buffer[-3]['datetime'] 
+        sum += diff1.seconds + diff2.seconds + diff3.seconds
+        curr_trans['trans_freq'] = (sum/3)
+        return (sum/3)< ACCEPTED_TRANSACTION_FREQUENCY
+        
+    def process_transaction(self, value) -> str:
+        current_state = self.state.value()
+        if current_state is None:
+            current_state = (
+                0,              # transaction counter
+                0,              # sum of transactions
+                []              # transaction buffer
+                )
+            
+        alert = self.detect_anomaly(value, current_state)
+        
+        new_trans_sum = current_state[1]
+        # update sum of buff transactions
+        if(len(current_state[2])==TRANSACTION_QUEUE_SIZE):
+            # remove the amount of the transaction at the end of buffer
+            new_trans_sum -= current_state[2][0]['amount']
+        new_trans_sum = value['amount']
+            
+        self.update_transaction_buffer(value, current_state[2])
+        # update the counter
+        current_state = (
+            current_state[0] + 1,
+            new_trans_sum,
+            current_state[2]
+        )
+        self.state.update(current_state)
+        return alert
+
+    def flat_map(self, value):
+        alert = self.process_transaction(value)
+        current_state = self.state.value()
+        value['average-amount'] = current_state[1]/len(current_state[2])
+        value['alert'] = alert
+
+        yield value
 
 properties = {
     'bootstrap.servers': 'localhost:9092',
     'group.id': '1',
-} 
-
-class CountWindowAverage(FlatMapFunction):
-
-    def __init__(self):
-        self.sum = None
-
-    def open(self, runtime_context: RuntimeContext):
-        descriptor = ValueStateDescriptor(
-            "average",  # the state name
-            Types.PICKLED_BYTE_ARRAY()  # type information
-        )
-        self.sum = runtime_context.get_state(descriptor)
-
-    def flat_map(self, value):
-        # access the state value
-        current_sum = self.sum.value()
-        if current_sum is None:
-            current_sum = (0, 0, 0, 0)
-
-        # update the count
-        current_sum = (current_sum[0] + 1, 
-                       current_sum[1] + value['amount'],
-                       current_sum[1] + value['latitude'],
-                       current_sum[1] + value['longitude'])
-
-        # update the state
-        self.sum.update(current_sum)
-        value['average-amount'] = current_sum[1]/current_sum[0]
-        value['average-latitude'] = current_sum[2]/current_sum[0]
-        value['average-longitude'] = current_sum[3]/current_sum[0]
-        
-
-        yield value
+}
 
 
 if __name__ == '__main__':
@@ -59,26 +115,19 @@ if __name__ == '__main__':
 
     env.set_parallelism(1)
 
-
-    deserialization_schema = SimpleStringSchema()
-
-    deserialization_schema = JsonRowDeserializationSchema.builder() \
-        .type_info(type_info=Types.ROW([Types.STRING(), Types.INT(), Types.FLOAT(), Types.FLOAT()])).build()
-
-
     earliest = False
     offset = KafkaOffsetsInitializer.earliest() if earliest else KafkaOffsetsInitializer.latest()
 
     source = KafkaSource.builder() \
         .set_bootstrap_servers('localhost:9092') \
-        .set_topics('TOPIC-Q3') \
+        .set_topics('TOPIC-T3') \
         .set_group_id("test_group") \
         .set_starting_offsets(offset) \
         .set_value_only_deserializer(SimpleStringSchema()) \
         .build()
 
     record_serializer = KafkaRecordSerializationSchema.builder() \
-        .set_topic('TOPIC-Q4') \
+        .set_topic('TOPIC-T4') \
         .set_value_serialization_schema(SimpleStringSchema()) \
         .build()
 
@@ -92,7 +141,7 @@ if __name__ == '__main__':
     ds = ds.map(lambda x: json.loads(x))
         
     ds = ds.key_by(lambda x:  x['user_id']) \
-        .flat_map(CountWindowAverage())
+        .flat_map(ProcessTransaction())
 
     ds.map(lambda x: "\n " + str(x), output_type=Types.STRING()).print()
 
