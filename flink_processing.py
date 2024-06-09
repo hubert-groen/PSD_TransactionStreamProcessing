@@ -15,6 +15,10 @@ import datetime
 ACCEPTED_TRANSACTION_FREQUENCY = 10
 TRANSACTION_QUEUE_SIZE = 10
 
+COUNTER_IDX = 0
+TRANS_SUM_IDX = 1
+PREV_TRANS_IDX =2
+
 class ProcessTransaction(FlatMapFunction):
     
     def __init__(self):
@@ -51,9 +55,10 @@ class ProcessTransaction(FlatMapFunction):
             'None'
     
     def is_amount_anomalous(self, curr_trans, state):
-        if len(state[2]) < 4:       # 4 is some arbitrary number of min transactions
+        if len(state[PREV_TRANS_IDX]) < 4:       # 4 is some arbitrary number of min transactions
             return False
-        avg_trans = state[1]/len(state[2])
+        avg_trans = state[TRANS_SUM_IDX]/len(state[PREV_TRANS_IDX])
+        # some dummy method - to be improved
         return (curr_trans['amount']-avg_trans)>4*avg_trans
 
     def is_frequency_anomalous(self, curr_trans, prev_trans_buffer):
@@ -81,17 +86,17 @@ class ProcessTransaction(FlatMapFunction):
         
         new_trans_sum = current_state[1]
         # update sum of buff transactions
-        if(len(current_state[2])==TRANSACTION_QUEUE_SIZE):
+        if(len(current_state[PREV_TRANS_IDX])==TRANSACTION_QUEUE_SIZE):
             # remove the amount of the transaction at the end of buffer
-            new_trans_sum -= current_state[2][0]['amount']
+            new_trans_sum -= current_state[PREV_TRANS_IDX][0]['amount']
         new_trans_sum = value['amount']
             
-        self.update_transaction_buffer(value, current_state[2])
+        self.update_transaction_buffer(value, current_state[PREV_TRANS_IDX])
         # update the counter
         current_state = (
-            current_state[0] + 1,
+            current_state[COUNTER_IDX] + 1,
             new_trans_sum,
-            current_state[2]
+            current_state[PREV_TRANS_IDX]
         )
         self.state.update(current_state)
         return alert
